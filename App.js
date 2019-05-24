@@ -11,7 +11,6 @@ import { StyleSheet, Text, View, PermissionsAndroid, TouchableOpacity, YellowBox
 import SmsAndroid  from 'react-native-get-sms-android';
 import socketIO from 'socket.io-client';
 import queueFactory from 'react-native-queue';
-import RedisClient from "react-native-redispubsub";
 
 YellowBox.ignoreWarnings(['Remote debugger']);
 
@@ -19,51 +18,44 @@ export default class App extends Component {
   state =  {
     unsendMessages: []
   }
-  constructor(props) {
-    super(props);
-    RedisClient.redisConnect("redis://h:paed030d5f2a4ee27e3da51d57d1c0c38a5256b5c65de8c2e76b2c7370e4172cb@ec2-18-206-37-137.compute-1.amazonaws.com:25989");
-    RedisClient.subscribe("sendMessage");
-
-    DeviceEventEmitter.addListener('sendMessage', function(e) {
-        alert(e);
-    });
-  }
+  
   async componentDidMount(){
     this.queue = await queueFactory();
     this.queue.addWorker('sendMessage', async (id, message) => {
-      await new Promise((resolve) => {
-          this.sendMessage(message)
-          resolve();
+      await new Promise(async (resolve) => {
+          await this.sendMessage(message, resolve)
       });
     
     });
-    const socket = socketIO('https://useful-theory-228316.appspot.com', {      
+    const socket = socketIO('https://useful-theory-228316.appspot.com/', {      
       transports: ['websocket'], jsonp: false });   
       socket.connect(); 
       socket.on('message', (message) => {
         this.queue.createJob('sendMessage', message, {}, true);
       })
   }
-  sendMessage = async (message) => {
+  sendMessage = async (message, resolve) => {
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.SEND_SMS,
     );
     if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-      SmsAndroid.autoSend(message.number, message.message, (fail) => {
+      SmsAndroid.autoSend(message.phoneNumber, message.message, (fail) => {
         message.error = fail
         this.setState({
           unsendMessages: [
-            ...this.unsendMessages,
+            ...this.state.unsendMessages,
             message
           ]
         })
+        resolve()
       }, (success) => {
+        resolve()
       });
     } else {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.SEND_SMS,
       );
-      this.sendMessage(message);
+      await this.sendMessage(message);
     }
   }
   resendFailed = () => {
@@ -80,10 +72,10 @@ export default class App extends Component {
         <View style={styles.failbox}>
           <FlatList
             data={this.state.unsendMessages}
-            keyExtractor={(item, index) => `${item.number}${item.message}${index}`}
+            keyExtractor={(item, index) => `${item.phoneNumber}${item.message}${index}`}
             renderItem={({item}) => 
             <View style={styles.rowFail}>
-              <Text style={styles.textFail}>Numero: {item.number}</Text>
+              <Text style={styles.textFail}>Numero: {item.phoneNumber}</Text>
               <Text style={styles.textFail}>Mensaje: {item.message}</Text>
               <Text style={styles.textFail}>Error: {item.error}</Text>
             </View>
