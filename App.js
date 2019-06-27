@@ -27,7 +27,7 @@ export default class App extends Component {
       });
     
     });
-    const socket = socketIO('https://useful-theory-228316.appspot.com/', {      
+    const socket = socketIO('https://order-os.appspot.com/', {      
       transports: ['websocket'], jsonp: false });   
       socket.connect(); 
       socket.on('message', (message) => {
