@@ -10,7 +10,7 @@ import React, {Component} from 'react';
 import { StyleSheet, Text, View, PermissionsAndroid, TouchableOpacity, YellowBox, FlatList, DeviceEventEmitter} from 'react-native';
 import SmsAndroid  from 'react-native-get-sms-android';
 import socketIO from 'socket.io-client';
-import queueFactory from 'react-native-queue';
+// import queueFactory from 'react-native-queue';
 
 YellowBox.ignoreWarnings(['Remote debugger']);
 
@@ -20,21 +20,22 @@ export default class App extends Component {
   }
   
   async componentDidMount(){
-    this.queue = await queueFactory();
-    this.queue.addWorker('sendMessage', async (id, message) => {
-      await new Promise(async (resolve) => {
-          await this.sendMessage(message, resolve)
-      });
+    // this.queue = await queueFactory();
+    // this.queue.addWorker('sendMessage', async (id, message) => {
+    //   await new Promise(async (resolve) => {
+    //       await this.sendMessage(message, resolve)
+    //   });
     
-    });
+    // });
     const socket = socketIO('https://order-os.appspot.com/', {      
       transports: ['websocket'], jsonp: false });   
       socket.connect(); 
-      socket.on('message', (message) => {
-        this.queue.createJob('sendMessage', message, {}, true);
+      socket.on('message', async (message) => {
+        await this.sendMessage(message)
+        // this.queue.createJob('sendMessage', message, {}, true);
       })
   }
-  sendMessage = async (message, resolve) => {
+  sendMessage = async (message) => {
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.SEND_SMS,
     );
@@ -47,9 +48,7 @@ export default class App extends Component {
             message
           ]
         })
-        resolve()
       }, (success) => {
-        resolve()
       });
     } else {
       const granted = await PermissionsAndroid.request(
