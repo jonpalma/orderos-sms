@@ -47,8 +47,8 @@ export default class App extends Component {
           message: 'Intentando reconeccion'
         })
       }) 
-      socket.on('message', async (message) => {
-        await this.sendMessage(message)
+      socket.on('message', (message) => {
+        this.sendMessage(message)
         // this.queue.createJob('sendMessage', message, {}, true);
       })
   }
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     margin: 10,
   },
   rowFail: {
-    height: 70,
+    marginTop: 10,
     width: '100%',
     alignItems: 'center',
     textAlign: 'center',
